@@ -1,0 +1,283 @@
+{
+  "policyVersion": "1.0.0",
+  "cases": [
+    {
+      "name": "clean invoice in US number format",
+      "documentId": "inv-001",
+      "mimeType": "text/plain",
+      "ocrText": "FACTURA ELECTRONICA\nNumero: F-2026-0431\nFecha de emision: 15/03/2026\nMoneda: USD\n\nSubtotal: 1,240.00\nIVA (21%): 260.40\nTotal: 1,500.40\n",
+      "modelAnswer": {
+        "fields": [
+          { "name": "documentNumber", "value": "F-2026-0431", "quote": "Numero: F-2026-0431", "confidence": 0.95 },
+          { "name": "issueDate", "value": "15/03/2026", "quote": "Fecha de emision: 15/03/2026", "confidence": 0.93 },
+          { "name": "currency", "value": "USD", "quote": "Moneda: USD", "confidence": 0.97 },
+          { "name": "subtotal", "value": "1,240.00", "quote": "Subtotal: 1,240.00", "confidence": 0.95 },
+          { "name": "tax", "value": "260.40", "quote": "IVA (21%): 260.40", "confidence": 0.90 },
+          { "name": "total", "value": "1,500.40", "quote": "Total: 1,500.40", "confidence": 0.96 }
+        ]
+      },
+      "expect": {
+        "values": {
+          "documentNumber": "F-2026-0431",
+          "issueDate": "2026-03-15",
+          "currency": "USD",
+          "subtotal": "1240.00",
+          "tax": "260.40",
+          "total": "1500.40"
+        },
+        "issueCodes": [],
+        "reviewRequired": false,
+        "evidencePages": { "documentNumber": 1, "total": 1 }
+      }
+    },
+    {
+      "name": "a required field is absent from the text",
+      "documentId": "rec-002",
+      "mimeType": "text/plain",
+      "ocrText": "RECIBO\nNumero: R-77\nFecha: 02/04/2026\nMoneda: EUR\nSubtotal: 80.00\n",
+      "modelAnswer": {
+        "fields": [
+          { "name": "documentNumber", "value": "R-77", "quote": "Numero: R-77", "confidence": 0.94 },
+          { "name": "issueDate", "value": "02/04/2026", "quote": "Fecha: 02/04/2026", "confidence": 0.92 },
+          { "name": "currency", "value": "EUR", "quote": "Moneda: EUR", "confidence": 0.96 },
+          { "name": "subtotal", "value": "80.00", "quote": "Subtotal: 80.00", "confidence": 0.93 }
+        ]
+      },
+      "expect": {
+        "values": {
+          "documentNumber": "R-77",
+          "issueDate": "2026-04-02",
+          "currency": "EUR",
+          "subtotal": "80.00"
+        },
+        "issueCodes": ["missing_required_field"],
+        "reviewRequired": true
+      }
+    },
+    {
+      "name": "the word total appears twice with different values",
+      "documentId": "nc-003",
+      "mimeType": "text/plain",
+      "ocrText": "NOTA DE CREDITO\nNumero: NC-9\nFecha: 10/05/2026\nMoneda: USD\nSubtotal: 100.00\nImpuesto: 21.00\nTotal: 121.00\nTotal anterior: 500.00\n",
+      "modelAnswer": {
+        "fields": [
+          { "name": "documentNumber", "value": "NC-9", "quote": "Numero: NC-9", "confidence": 0.95 },
+          { "name": "issueDate", "value": "10/05/2026", "quote": "Fecha: 10/05/2026", "confidence": 0.93 },
+          { "name": "currency", "value": "USD", "quote": "Moneda: USD", "confidence": 0.96 },
+          { "name": "subtotal", "value": "100.00", "quote": "Subtotal: 100.00", "confidence": 0.95 },
+          { "name": "tax", "value": "21.00", "quote": "Impuesto: 21.00", "confidence": 0.91 },
+          { "name": "total", "value": "121.00", "quote": "Total: 121.00", "confidence": 0.94 }
+        ]
+      },
+      "expect": {
+        "values": {
+          "documentNumber": "NC-9",
+          "issueDate": "2026-05-10",
+          "currency": "USD",
+          "subtotal": "100.00",
+          "tax": "21.00",
+          "total": "121.00"
+        },
+        "issueCodes": ["repeated_value"],
+        "reviewRequired": true
+      }
+    },
+    {
+      "name": "OCR substituted zero for O and one for l",
+      "documentId": "inv-004",
+      "mimeType": "text/plain",
+      "ocrText": "FACTURA\nN0mero: F-2026-0522\nFecha: 20/06/2026\nMoneda: USD\n5ubt0ta1: 200.00\nIVA (21%): 42.00\nT0ta1: 242.00\n",
+      "modelAnswer": {
+        "fields": [
+          { "name": "documentNumber", "value": "F-2026-0522", "quote": "N0mero: F-2026-0522", "confidence": 0.90 },
+          { "name": "issueDate", "value": "20/06/2026", "quote": "Fecha: 20/06/2026", "confidence": 0.92 },
+          { "name": "currency", "value": "USD", "quote": "Moneda: USD", "confidence": 0.96 },
+          { "name": "subtotal", "value": "200.00", "quote": "5ubt0ta1: 200.00", "confidence": 0.88 },
+          { "name": "tax", "value": "42.00", "quote": "IVA (21%): 42.00", "confidence": 0.90 },
+          { "name": "total", "value": "242.00", "quote": "T0ta1: 242.00", "confidence": 0.89 }
+        ]
+      },
+      "expect": {
+        "values": {
+          "documentNumber": "F-2026-0522",
+          "issueDate": "2026-06-20",
+          "currency": "USD",
+          "subtotal": "200.00",
+          "tax": "42.00",
+          "total": "242.00"
+        },
+        "issueCodes": [],
+        "reviewRequired": false
+      }
+    },
+    {
+      "name": "european decimal comma and thousands dot",
+      "documentId": "inv-005",
+      "mimeType": "text/plain",
+      "ocrText": "FACTURA\nNumero: F-2026-0601\nFecha: 01/07/2026\nMoneda: EUR\nSubtotal: 1.240,00\nIVA (21%): 260,40\nTotal: 1.500,40\n",
+      "modelAnswer": {
+        "fields": [
+          { "name": "documentNumber", "value": "F-2026-0601", "quote": "Numero: F-2026-0601", "confidence": 0.95 },
+          { "name": "issueDate", "value": "01/07/2026", "quote": "Fecha: 01/07/2026", "confidence": 0.93 },
+          { "name": "currency", "value": "EUR", "quote": "Moneda: EUR", "confidence": 0.96 },
+          { "name": "subtotal", "value": "1.240,00", "quote": "Subtotal: 1.240,00", "confidence": 0.94 },
+          { "name": "tax", "value": "260,40", "quote": "IVA (21%): 260,40", "confidence": 0.92 },
+          { "name": "total", "value": "1.500,40", "quote": "Total: 1.500,40", "confidence": 0.95 }
+        ]
+      },
+      "expect": {
+        "values": {
+          "documentNumber": "F-2026-0601",
+          "issueDate": "2026-07-01",
+          "currency": "EUR",
+          "subtotal": "1240.00",
+          "tax": "260.40",
+          "total": "1500.40"
+        },
+        "issueCodes": [],
+        "reviewRequired": false
+      }
+    },
+    {
+      "name": "the total does not equal the subtotal plus the tax",
+      "documentId": "inv-006",
+      "mimeType": "text/plain",
+      "ocrText": "FACTURA\nNumero: F-2026-0701\nFecha: 03/08/2026\nMoneda: USD\nSubtotal: 300.00\nIVA (21%): 63.00\nTotal: 500.00\n",
+      "modelAnswer": {
+        "fields": [
+          { "name": "documentNumber", "value": "F-2026-0701", "quote": "Numero: F-2026-0701", "confidence": 0.95 },
+          { "name": "issueDate", "value": "03/08/2026", "quote": "Fecha: 03/08/2026", "confidence": 0.93 },
+          { "name": "currency", "value": "USD", "quote": "Moneda: USD", "confidence": 0.96 },
+          { "name": "subtotal", "value": "300.00", "quote": "Subtotal: 300.00", "confidence": 0.95 },
+          { "name": "tax", "value": "63.00", "quote": "IVA (21%): 63.00", "confidence": 0.93 },
+          { "name": "total", "value": "500.00", "quote": "Total: 500.00", "confidence": 0.97 }
+        ]
+      },
+      "expect": {
+        "values": {
+          "documentNumber": "F-2026-0701",
+          "issueDate": "2026-08-03",
+          "currency": "USD",
+          "subtotal": "300.00",
+          "tax": "63.00",
+          "total": "500.00"
+        },
+        "issueCodes": ["arithmetic_mismatch"],
+        "reviewRequired": true
+      }
+    },
+    {
+      "name": "a second page after a form feed",
+      "documentId": "inv-007",
+      "mimeType": "text/plain",
+      "ocrText": "FACTURA\nNumero: F-2026-0801\nFecha de emision: 09/09/2026\nMoneda: USD\nSubtotal: 50.00\n\fMoneda: USD\nIVA: 10.50\nTotal: 60.50\n",
+      "modelAnswer": {
+        "fields": [
+          { "name": "documentNumber", "value": "F-2026-0801", "quote": "Numero: F-2026-0801", "confidence": 0.95 },
+          { "name": "issueDate", "value": "09/09/2026", "quote": "Fecha de emision: 09/09/2026", "confidence": 0.93 },
+          { "name": "currency", "value": "USD", "quote": "Moneda: USD", "confidence": 0.96 },
+          { "name": "subtotal", "value": "50.00", "quote": "Subtotal: 50.00", "confidence": 0.95 },
+          { "name": "tax", "value": "10.50", "quote": "IVA: 10.50", "confidence": 0.92 },
+          { "name": "total", "value": "60.50", "quote": "Total: 60.50", "confidence": 0.95 }
+        ]
+      },
+      "expect": {
+        "values": {
+          "documentNumber": "F-2026-0801",
+          "issueDate": "2026-09-09",
+          "currency": "USD",
+          "subtotal": "50.00",
+          "tax": "10.50",
+          "total": "60.50"
+        },
+        "issueCodes": [],
+        "reviewRequired": false,
+        "evidencePages": { "documentNumber": 1, "total": 2 }
+      }
+    },
+    {
+      "name": "a field below the policy confidence forces review with no issue",
+      "documentId": "inv-008",
+      "mimeType": "text/plain",
+      "ocrText": "FACTURA\nNumero: F-2026-0901\nFecha: 11/10/2026\nMoneda: USD\nSubtotal: 10.00\nIVA: 2.10\nTotal: 12.10\n",
+      "modelAnswer": {
+        "fields": [
+          { "name": "documentNumber", "value": "F-2026-0901", "quote": "Numero: F-2026-0901", "confidence": 0.95 },
+          { "name": "issueDate", "value": "11/10/2026", "quote": "Fecha: 11/10/2026", "confidence": 0.93 },
+          { "name": "currency", "value": "USD", "quote": "Moneda: USD", "confidence": 0.96 },
+          { "name": "subtotal", "value": "10.00", "quote": "Subtotal: 10.00", "confidence": 0.91 },
+          { "name": "tax", "value": "2.10", "quote": "IVA: 2.10", "confidence": 0.90 },
+          { "name": "total", "value": "12.10", "quote": "Total: 12.10", "confidence": 0.55 }
+        ]
+      },
+      "expect": {
+        "values": {
+          "documentNumber": "F-2026-0901",
+          "issueDate": "2026-10-11",
+          "currency": "USD",
+          "subtotal": "10.00",
+          "tax": "2.10",
+          "total": "12.10"
+        },
+        "issueCodes": [],
+        "reviewRequired": true
+      }
+    },
+    {
+      "name": "a value the model stated does not match its own quote",
+      "documentId": "inv-009",
+      "mimeType": "text/plain",
+      "ocrText": "FACTURA\nNumero: F-2026-1001\nFecha: 12/11/2026\nMoneda: USD\nSubtotal: 40.00\nIVA: 8.40\nTotal: 48.40\n",
+      "modelAnswer": {
+        "fields": [
+          { "name": "documentNumber", "value": "F-2026-1001", "quote": "Numero: F-2026-1001", "confidence": 0.95 },
+          { "name": "issueDate", "value": "12/11/2026", "quote": "Fecha: 12/11/2026", "confidence": 0.93 },
+          { "name": "currency", "value": "USD", "quote": "Moneda: USD", "confidence": 0.96 },
+          { "name": "subtotal", "value": "40.00", "quote": "Subtotal: 40.00", "confidence": 0.95 },
+          { "name": "tax", "value": "8.40", "quote": "IVA: 8.40", "confidence": 0.93 },
+          { "name": "total", "value": "999.00", "quote": "Total: 48.40", "confidence": 0.97 }
+        ]
+      },
+      "expect": {
+        "values": {
+          "documentNumber": "F-2026-1001",
+          "issueDate": "2026-11-12",
+          "currency": "USD",
+          "subtotal": "40.00",
+          "tax": "8.40"
+        },
+        "absent": ["total"],
+        "issueCodes": ["value_not_in_evidence", "missing_required_field"],
+        "reviewRequired": true
+      }
+    },
+    {
+      "name": "a quote that appears nowhere in the OCR text",
+      "documentId": "inv-010",
+      "mimeType": "text/plain",
+      "ocrText": "FACTURA\nNumero: F-2026-1101\nFecha: 14/12/2026\nMoneda: USD\nSubtotal: 70.00\nIVA: 14.70\nTotal: 84.70\n",
+      "modelAnswer": {
+        "fields": [
+          { "name": "documentNumber", "value": "F-2026-1101", "quote": "Numero: F-2026-1101", "confidence": 0.95 },
+          { "name": "issueDate", "value": "14/12/2026", "quote": "Fecha: 14/12/2026", "confidence": 0.93 },
+          { "name": "currency", "value": "USD", "quote": "Moneda: USD", "confidence": 0.96 },
+          { "name": "subtotal", "value": "70.00", "quote": "Subtotal: 70.00", "confidence": 0.95 },
+          { "name": "tax", "value": "14.70", "quote": "IVA: 14.70", "confidence": 0.93 },
+          { "name": "total", "value": "84.70", "quote": "Total: 1,000.00", "confidence": 0.99 }
+        ]
+      },
+      "expect": {
+        "values": {
+          "documentNumber": "F-2026-1101",
+          "issueDate": "2026-12-14",
+          "currency": "USD",
+          "subtotal": "70.00",
+          "tax": "14.70"
+        },
+        "absent": ["total"],
+        "issueCodes": ["evidence_not_found", "missing_required_field"],
+        "reviewRequired": true
+      }
+    }
+  ]
+}
