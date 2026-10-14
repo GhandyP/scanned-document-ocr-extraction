@@ -1,0 +1,10 @@
+{
+  "fields": [
+    { "name": "documentNumber", "value": "F-1", "quote": "Numero: F-1", "confidence": 0.95 },
+    { "name": "issueDate", "value": "15/03/2026", "quote": "Fecha: 15/03/2026", "confidence": 0.95 },
+    { "name": "currency", "value": "USD", "quote": "Moneda: USD", "confidence": 0.95 },
+    { "name": "subtotal", "value": "10.00", "quote": "Subtotal: 10.00", "confidence": 0.95 },
+    { "name": "tax", "value": "2.10", "quote": "IVA: 2.10", "confidence": 0.95 },
+    { "name": "total", "value": "12.10", "quote": "Total: 12.10", "confidence": 0.95 }
+  ]
+}
