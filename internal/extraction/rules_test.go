@@ -24,7 +24,7 @@ type fixtureCase struct {
 	DocumentID  string          `json:"documentId"`
 	MIMEType    string          `json:"mimeType"`
 	OCRText     string          `json:"ocrText"`
-	ModelAnswer candidateAnswer `json:"modelAnswer"`
+	ModelAnswer CandidateAnswer `json:"modelAnswer"`
 	Expect      fixtureExpect   `json:"expect"`
 }
 
@@ -155,7 +155,7 @@ func TestEvaluateAgainstDocumentedFixtures(t *testing.T) {
 // repository refuses to make.
 func TestEvaluateReportsInputProblemsAndExtractsNothing(t *testing.T) {
 	in := DocumentInput{DocumentID: "d-1", MIMEType: MIMEImagePNG}
-	answer := candidateAnswer{Fields: []candidateField{
+	answer := CandidateAnswer{Fields: []CandidateField{
 		{Name: FieldTotal, Value: "10.00", Quote: "Total: 10.00", Confidence: 0.99},
 	}}
 
@@ -183,7 +183,7 @@ func TestEvaluateRejectsDuplicateUnnamedAndUnlocatableCandidates(t *testing.T) {
 		OCRText:    "Total: 10.00\n",
 	}
 	policy := Policy{Version: "1.0.0", ReviewBelow: 0.80}
-	answer := candidateAnswer{Fields: []candidateField{
+	answer := CandidateAnswer{Fields: []CandidateField{
 		{Name: FieldTotal, Value: "10.00", Quote: "Total: 10.00", Confidence: 0.90},
 		{Name: FieldTotal, Value: "20.00", Quote: "Total: 10.00", Confidence: 0.90},
 		{Name: "   ", Value: "x", Quote: "Total: 10.00", Confidence: 0.90},
@@ -309,7 +309,7 @@ func TestEvaluateFlagsARepeatedAmountLabelFromTheTextAlone(t *testing.T) {
 		OCRText:    "Subtotal: 100.00\nTotal: 121.00\nTotal anterior: 500.00\n",
 	}
 	policy := Policy{Version: "1.0.0", ReviewBelow: 0.80}
-	answer := candidateAnswer{Fields: []candidateField{
+	answer := CandidateAnswer{Fields: []CandidateField{
 		{Name: FieldTotal, Value: "121.00", Quote: "Total: 121.00", Confidence: 0.95},
 	}}
 
@@ -324,6 +324,33 @@ func TestEvaluateFlagsARepeatedAmountLabelFromTheTextAlone(t *testing.T) {
 	}
 	if !got.Review.Required {
 		t.Error("a repeated label did not require review")
+	}
+}
+
+// TestEvaluateTreatsAnIncompleteInputAsUnreadable checks that an input the
+// contract requires but the caller left incomplete yields no fields at all.
+//
+// A review queue entry needs an identity, and an extraction whose document ID is
+// missing cannot be keyed to one, so the run is reported rather than half done.
+// This is also what keeps the command honest: it can tell a caller problem from
+// an internal one instead of producing an extraction that fails its own shape
+// check.
+func TestEvaluateTreatsAnIncompleteInputAsUnreadable(t *testing.T) {
+	in := DocumentInput{MIMEType: MIMETextPlain, OCRText: "Total: 10.00\n"}
+	answer := CandidateAnswer{Fields: []CandidateField{
+		{Name: FieldTotal, Value: "10.00", Quote: "Total: 10.00", Confidence: 0.99},
+	}}
+
+	got := Evaluate(in, answer, DefaultPolicy())
+
+	if len(got.Fields) != 0 {
+		t.Errorf("got %d fields from an input with no document ID, want none", len(got.Fields))
+	}
+	if want := []string{CodeMissingDocumentID}; !sameSet(sortedCodes(got.Errors), want) {
+		t.Errorf("issue codes = %v, want %v", sortedCodes(got.Errors), want)
+	}
+	if !got.Review.Required {
+		t.Error("an incomplete input did not require review")
 	}
 }
 

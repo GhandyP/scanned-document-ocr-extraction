@@ -331,18 +331,21 @@ func (e Extraction) Validate() []Issue {
 	return issues
 }
 
-// candidateField is the only shape a model may produce. It deliberately has no
-// evidence, coordinate or page member: every span is derived in Go by locating
-// the quote in the OCR text, so no model output can invent, move or widen the
-// evidence a field points at.
-type candidateField struct {
+// CandidateField is the only shape a model may produce, and the shape a caller
+// may hand to Evaluate from a frozen answer file.
+//
+// It deliberately has no evidence, coordinate or page member: every span is
+// derived in Go by locating the quote in the OCR text, so no model output can
+// invent, move or widen the evidence a field points at.
+type CandidateField struct {
 	Name       string  `json:"name"`
 	Value      string  `json:"value"`
 	Quote      string  `json:"quote"`
 	Confidence float64 `json:"confidence"`
 }
 
-// candidateAnswer is the model's whole answer.
-type candidateAnswer struct {
-	Fields []candidateField `json:"fields"`
+// CandidateAnswer is a model's whole answer. Agent.Extract returns one and
+// Evaluate is the only thing that turns it into fields.
+type CandidateAnswer struct {
+	Fields []CandidateField `json:"fields"`
 }

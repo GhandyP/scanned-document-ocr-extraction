@@ -31,7 +31,7 @@ var amountFieldLabels = map[string][]string{
 // The four stages run in a fixed order: input problems, per candidate checks,
 // repeated labels, then the policy. Every stage appends to the same issue list,
 // so a caller sees the whole picture instead of the first problem.
-func Evaluate(in DocumentInput, answer candidateAnswer, policy Policy) Extraction {
+func Evaluate(in DocumentInput, answer CandidateAnswer, policy Policy) Extraction {
 	out := Extraction{
 		DocumentID: strings.TrimSpace(in.DocumentID),
 		Policy:     policy.Version,
@@ -41,16 +41,13 @@ func Evaluate(in DocumentInput, answer candidateAnswer, policy Policy) Extractio
 
 	out.Errors = append(out.Errors, policy.Validate()...)
 
-	// An input this slice cannot read yields no fields at all, not a partial
-	// answer with a warning attached.
-	blocked := false
-	for _, issue := range in.Validate() {
-		out.Errors = append(out.Errors, issue)
-		if issue.Code == CodeMissingOCRText || issue.Code == CodeUnsupportedMIMEType {
-			blocked = true
-		}
-	}
-	if blocked {
+	// An input the contract requires but the caller left incomplete yields no
+	// fields at all, not a half answer with a warning attached. A field that
+	// cannot be keyed to a document cannot enter a review queue either, so the
+	// input is refused as a whole and the caller sees exactly which parts are
+	// missing.
+	if inputIssues := in.Validate(); len(inputIssues) != 0 {
+		out.Errors = append(out.Errors, inputIssues...)
 		out.Review = reviewFor(out.Fields, out.Errors, policy)
 		return out
 	}
@@ -67,7 +64,7 @@ func Evaluate(in DocumentInput, answer candidateAnswer, policy Policy) Extractio
 
 // evaluateCandidates applies the per candidate checks. A rejected candidate
 // never becomes a field; the reason is appended to issues.
-func evaluateCandidates(in DocumentInput, answer candidateAnswer, issues *[]Issue) []Field {
+func evaluateCandidates(in DocumentInput, answer CandidateAnswer, issues *[]Issue) []Field {
 	fields := make([]Field, 0, len(answer.Fields))
 	seen := make(map[string]bool, len(answer.Fields))
 

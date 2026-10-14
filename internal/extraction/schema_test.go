@@ -255,11 +255,11 @@ func TestWireContractKeepsTheDocumentedNames(t *testing.T) {
 // answer cannot place its own evidence: the shape it may produce has no member
 // for a span, a page or a confidence-bearing coordinate.
 func TestCandidateFieldCarriesNoEvidence(t *testing.T) {
-	raw, err := json.Marshal(candidateAnswer{Fields: []candidateField{
+	raw, err := json.Marshal(CandidateAnswer{Fields: []CandidateField{
 		{Name: FieldTotal, Value: "10.00", Quote: "Total $10.00", Confidence: 0.9},
 	}})
 	if err != nil {
-		t.Fatalf("Marshal(candidateAnswer) error = %v", err)
+		t.Fatalf("Marshal(CandidateAnswer) error = %v", err)
 	}
 	for _, forbidden := range []string{`"evidence"`, `"start"`, `"end"`, `"page"`, `"line"`, `"match"`} {
 		if strings.Contains(string(raw), forbidden) {

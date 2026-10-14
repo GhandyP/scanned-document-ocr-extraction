@@ -98,12 +98,12 @@ func NewAgent(cfg AgentConfig) (*Agent, error) {
 
 // Extract runs the supplied OCR text in the session reserved for its document
 // and returns only fields from the model's final JSON response.
-func (a *Agent) Extract(ctx context.Context, in DocumentInput) (candidateAnswer, error) {
+func (a *Agent) Extract(ctx context.Context, in DocumentInput) (CandidateAnswer, error) {
 	if a == nil || a.runner == nil {
-		return candidateAnswer{}, errors.New("extraction agent is not initialized")
+		return CandidateAnswer{}, errors.New("extraction agent is not initialized")
 	}
 	if issues := in.Validate(); len(issues) != 0 {
-		return candidateAnswer{}, fmt.Errorf("invalid document input: %v", issues)
+		return CandidateAnswer{}, fmt.Errorf("invalid document input: %v", issues)
 	}
 
 	message := &genai.Content{
@@ -113,14 +113,14 @@ func (a *Agent) Extract(ctx context.Context, in DocumentInput) (candidateAnswer,
 	var finalEvent *session.Event
 	for event, err := range a.runner.Run(ctx, extractionUserID, SessionIDFor(in.DocumentID), message, agent.RunConfig{}) {
 		if err != nil {
-			return candidateAnswer{}, fmt.Errorf("run extraction agent: %w", err)
+			return CandidateAnswer{}, fmt.Errorf("run extraction agent: %w", err)
 		}
 		if event != nil && event.IsFinalResponse() {
 			finalEvent = event
 		}
 	}
 	if finalEvent == nil {
-		return candidateAnswer{}, errors.New("extraction agent produced no final response")
+		return CandidateAnswer{}, errors.New("extraction agent produced no final response")
 	}
 
 	var response strings.Builder
@@ -132,11 +132,11 @@ func (a *Agent) Extract(ctx context.Context, in DocumentInput) (candidateAnswer,
 		}
 	}
 	if strings.TrimSpace(response.String()) == "" {
-		return candidateAnswer{}, errors.New("extraction agent final response contains no JSON")
+		return CandidateAnswer{}, errors.New("extraction agent final response contains no JSON")
 	}
 	answer, err := parseCandidateAnswer([]byte(response.String()))
 	if err != nil {
-		return candidateAnswer{}, fmt.Errorf("parse extraction agent response: %w", err)
+		return CandidateAnswer{}, fmt.Errorf("parse extraction agent response: %w", err)
 	}
 	return answer, nil
 }
@@ -182,51 +182,51 @@ func SessionIDFor(documentID string) string {
 	return "document-" + base64.RawURLEncoding.EncodeToString([]byte(documentID))
 }
 
-func parseCandidateAnswer(data []byte) (candidateAnswer, error) {
+func parseCandidateAnswer(data []byte) (CandidateAnswer, error) {
 	var object map[string]json.RawMessage
 	if err := json.Unmarshal(data, &object); err != nil {
-		return candidateAnswer{}, fmt.Errorf("invalid JSON: %w", err)
+		return CandidateAnswer{}, fmt.Errorf("invalid JSON: %w", err)
 	}
 	if object == nil {
-		return candidateAnswer{}, errors.New("response must be a JSON object")
+		return CandidateAnswer{}, errors.New("response must be a JSON object")
 	}
 	if len(object) != 1 {
-		return candidateAnswer{}, errors.New("response must contain only the fields member")
+		return CandidateAnswer{}, errors.New("response must contain only the fields member")
 	}
 	rawFields, exists := object["fields"]
 	if !exists || string(rawFields) == "null" {
-		return candidateAnswer{}, errors.New("response must contain a fields array")
+		return CandidateAnswer{}, errors.New("response must contain a fields array")
 	}
 
 	var fields []json.RawMessage
 	if err := json.Unmarshal(rawFields, &fields); err != nil {
-		return candidateAnswer{}, fmt.Errorf("fields must be an array: %w", err)
+		return CandidateAnswer{}, fmt.Errorf("fields must be an array: %w", err)
 	}
 	if fields == nil {
-		return candidateAnswer{}, errors.New("response must contain a fields array")
+		return CandidateAnswer{}, errors.New("response must contain a fields array")
 	}
 
-	answer := candidateAnswer{Fields: make([]candidateField, 0, len(fields))}
+	answer := CandidateAnswer{Fields: make([]CandidateField, 0, len(fields))}
 	for i, rawField := range fields {
 		var members map[string]json.RawMessage
 		if err := json.Unmarshal(rawField, &members); err != nil || members == nil {
 			if err == nil {
 				err = errors.New("field must be an object")
 			}
-			return candidateAnswer{}, fmt.Errorf("field %d is invalid: %w", i, err)
+			return CandidateAnswer{}, fmt.Errorf("field %d is invalid: %w", i, err)
 		}
 		if len(members) != 4 {
-			return candidateAnswer{}, fmt.Errorf("field %d must contain exactly name, value, quote, and confidence", i)
+			return CandidateAnswer{}, fmt.Errorf("field %d must contain exactly name, value, quote, and confidence", i)
 		}
 		for _, name := range []string{"name", "value", "quote", "confidence"} {
 			value, ok := members[name]
 			if !ok || string(value) == "null" {
-				return candidateAnswer{}, fmt.Errorf("field %d is missing required member %q", i, name)
+				return CandidateAnswer{}, fmt.Errorf("field %d is missing required member %q", i, name)
 			}
 		}
-		var field candidateField
+		var field CandidateField
 		if err := json.Unmarshal(rawField, &field); err != nil {
-			return candidateAnswer{}, fmt.Errorf("field %d is invalid: %w", i, err)
+			return CandidateAnswer{}, fmt.Errorf("field %d is invalid: %w", i, err)
 		}
 		answer.Fields = append(answer.Fields, field)
 	}
@@ -235,16 +235,16 @@ func parseCandidateAnswer(data []byte) (candidateAnswer, error) {
 	// check, then require that the payload is exactly one JSON value.
 	decoder := json.NewDecoder(strings.NewReader(string(data)))
 	decoder.DisallowUnknownFields()
-	var decoded candidateAnswer
+	var decoded CandidateAnswer
 	if err := decoder.Decode(&decoded); err != nil {
-		return candidateAnswer{}, fmt.Errorf("invalid candidate answer: %w", err)
+		return CandidateAnswer{}, fmt.Errorf("invalid candidate answer: %w", err)
 	}
 	var trailing any
 	if err := decoder.Decode(&trailing); err != io.EOF {
 		if err == nil {
-			return candidateAnswer{}, errors.New("response contains more than one JSON value")
+			return CandidateAnswer{}, errors.New("response contains more than one JSON value")
 		}
-		return candidateAnswer{}, fmt.Errorf("invalid trailing data: %w", err)
+		return CandidateAnswer{}, fmt.Errorf("invalid trailing data: %w", err)
 	}
 	return answer, nil
 }

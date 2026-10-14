@@ -132,7 +132,7 @@ func TestAgentExtractPreservesCandidateFieldsAndUsesOCRUserMessage(t *testing.T)
 	if err != nil {
 		t.Fatalf("Extract() error = %v", err)
 	}
-	want := candidateAnswer{Fields: []candidateField{
+	want := CandidateAnswer{Fields: []CandidateField{
 		{Name: "invoiceNumber", Value: "INV-0042", Quote: "Invoice No. INV-0042", Confidence: 0.91},
 		{Name: "total", Value: "$18.25", Quote: "Total: $18.25", Confidence: 0.73},
 	}}
